@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khảo Sát Lịch Giảng Dạy</title>
     
-    <!-- Tailwind CSS (Cần mạng internet) -->
-    <script src="https://cdn.tailwindcss.com" onerror="alert('Lỗi: Không thể tải giao diện. Vui lòng kiểm tra kết nối Internet của bạn!')"></script>
+    <!-- Tailwind CSS (Cần mạng internet để tải giao diện đẹp) -->
+    <script src="https://cdn.tailwindcss.com" onerror="alert('Lỗi: Không thể tải thư viện giao diện (Tailwind). Vui lòng kiểm tra kết nối Internet!')"></script>
     
-    <!-- Lucide Icons (Cần mạng internet - Đã update link ổn định hơn) -->
+    <!-- Lucide Icons (Cần mạng internet) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     
     <!-- Font Noto Sans Vietnamese -->
@@ -22,8 +22,9 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Style cho nút chọn ngày */
         .day-btn.selected {
-            background-color: #4f46e5;
+            background-color: #4f46e5; /* indigo-600 */
             color: white;
             border-color: #4f46e5;
             transform: scale(1.05);
@@ -33,6 +34,18 @@
             background-color: #eef2ff;
             border-color: #a5b4fc;
         }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 py-8 px-4 sm:px-6">
@@ -66,7 +79,7 @@
                 />
             </div>
 
-            <!-- Danh sách các lịch dạy (Container) -->
+            <!-- Danh sách các lịch dạy (Container chứa các thẻ) -->
             <div id="schedules-container" class="space-y-4">
                 <!-- Các thẻ lịch sẽ được JS thêm vào đây -->
             </div>
@@ -87,8 +100,11 @@
                     id="submitBtn"
                     class="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <i data-lucide="send" class="w-5 h-5"></i>
-                    Gửi Khảo Sát
+                    <span id="btnText" class="flex items-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        Gửi Khảo Sát
+                    </span>
+                    <div id="btnSpinner" class="spinner hidden"></div>
                 </button>
             </div>
         </form>
@@ -98,7 +114,7 @@
         </p>
     </div>
 
-    <!-- Màn hình thành công -->
+    <!-- Màn hình thành công (Ẩn mặc định) -->
     <div id="success-screen" class="hidden min-h-screen fixed inset-0 bg-slate-50 z-50 flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center fade-in-up">
             <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -115,10 +131,10 @@
         </div>
     </div>
 
-    <!-- Template cho một thẻ lịch -->
+    <!-- Template cho một thẻ lịch (Ẩn, dùng để clone ra nhiều thẻ) -->
     <template id="schedule-template">
         <div class="schedule-card bg-white rounded-xl shadow-md border-l-4 border-indigo-500 p-6 relative fade-in">
-            <!-- Header -->
+            <!-- Header của thẻ -->
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
                 <h3 class="font-bold text-indigo-900 schedule-title">Lịch dạy #1</h3>
                 <button
@@ -203,6 +219,14 @@
     </template>
 
     <script>
+        // ==========================================
+        // CẤU HÌNH KẾT NỐI GOOGLE SHEETS
+        // Bước 1: Copy link "Web App URL" từ Google Apps Script
+        // Bước 2: Dán vào giữa 2 dấu nháy đơn bên dưới
+        const GOOGLE_SCRIPT_URL = ''; 
+        // Ví dụ: const GOOGLE_SCRIPT_URL = 'https://script.google.com/.../exec';
+        // ==========================================
+
         const DAYS = [
             { key: 'T2', label: 'Thứ 2' },
             { key: 'T3', label: 'Thứ 3' },
@@ -215,19 +239,21 @@
 
         let scheduleCount = 0;
 
+        // Khởi chạy khi trang load xong
         document.addEventListener('DOMContentLoaded', () => {
-            // Safe Lucide init
+            // Kiểm tra và khởi tạo icon an toàn
             try {
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 } else {
-                    console.warn("Lucide library failed to load");
+                    console.warn("Thư viện Lucide chưa tải xong. Icon có thể không hiện.");
                 }
             } catch (e) { console.error(e); }
 
-            addSchedule();
+            addSchedule(); // Thêm 1 thẻ mặc định đầu tiên
         });
 
+        // Hàm thêm lịch mới
         function addSchedule() {
             scheduleCount++;
             const container = document.getElementById('schedules-container');
@@ -238,9 +264,11 @@
             card.id = `schedule-${scheduleCount}`;
             card.querySelector('.schedule-title').textContent = `Lịch dạy #${scheduleCount}`;
 
+            // Nút xóa
             const btnRemove = card.querySelector('.btn-remove');
             btnRemove.onclick = () => removeSchedule(card.id);
 
+            // Tạo các nút chọn ngày
             const daysContainer = card.querySelector('.days-container');
             const hiddenInput = card.querySelector('input[name="selectedDays"]');
             
@@ -261,14 +289,16 @@
             container.appendChild(clone);
             updateRemoveButtons();
             
-            // Re-run icons for new content
+            // Render lại icon cho phần tử mới
             if (typeof lucide !== 'undefined') lucide.createIcons();
             
+            // Cuộn xuống thẻ mới tạo
             if (scheduleCount > 1) {
                 card.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
+        // Hàm xóa lịch
         function removeSchedule(id) {
             const card = document.getElementById(id);
             if (card) {
@@ -278,6 +308,7 @@
             }
         }
 
+        // Cập nhật lại số thứ tự (Lịch #1, Lịch #2...)
         function updateScheduleNumbers() {
             const cards = document.querySelectorAll('.schedule-card');
             scheduleCount = cards.length;
@@ -286,6 +317,7 @@
             });
         }
 
+        // Ẩn nút xóa nếu chỉ còn 1 thẻ
         function updateRemoveButtons() {
             const cards = document.querySelectorAll('.schedule-card');
             const buttons = document.querySelectorAll('.btn-remove');
@@ -297,19 +329,23 @@
             }
         }
 
+        // Cập nhật giá trị ngày vào ô ẩn (Hidden Input)
         function updateSelectedDays(card, hiddenInput) {
             const selectedBtns = card.querySelectorAll('.day-btn.selected');
             const keys = Array.from(selectedBtns).map(btn => btn.dataset.key);
             
+            // Sắp xếp ngày theo thứ tự T2 -> CN
             keys.sort((a, b) => DAYS.findIndex(d => d.key === a) - DAYS.findIndex(d => d.key === b));
 
             hiddenInput.value = keys.join(',');
             
+            // Hiện/Ẩn thông báo lỗi
             const errorMsg = card.querySelector('.error-msg');
             if (keys.length === 0) errorMsg.classList.remove('hidden');
             else errorMsg.classList.add('hidden');
         }
 
+        // Xử lý khi bấm nút Gửi
         function handleSubmit(e) {
             e.preventDefault();
             
@@ -317,6 +353,7 @@
             let isValid = true;
             let firstInvalidCard = null;
 
+            // Kiểm tra xem đã chọn ngày chưa
             scheduleCards.forEach(card => {
                 const hiddenInput = card.querySelector('input[name="selectedDays"]');
                 const errorMsg = card.querySelector('.error-msg');
@@ -335,6 +372,17 @@
                 return;
             }
 
+            // Hiển thị trạng thái Loading
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            // Thu thập dữ liệu
             const teacherName = document.getElementById('teacherName').value;
             const schedules = [];
 
@@ -352,7 +400,44 @@
             const finalData = { teacherName, schedules };
             console.log("Dữ liệu gửi đi:", finalData);
 
-            document.getElementById('success-message').textContent = `Cảm ơn thầy/cô ${teacherName} đã cập nhật lịch giảng dạy.`;
+            // Gửi dữ liệu (Nếu có link Script)
+            if (GOOGLE_SCRIPT_URL) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Quan trọng
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalData)
+                })
+                .then(() => showSuccess(teacherName))
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi gửi dữ liệu. Vui lòng thử lại!');
+                    stopLoading();
+                });
+            } else {
+                // Chế độ demo (chưa có link script)
+                console.warn("Chưa cấu hình GOOGLE_SCRIPT_URL. Dữ liệu chỉ hiện ở Console.");
+                // Giả lập delay 1 giây rồi báo thành công
+                setTimeout(() => {
+                    showSuccess(teacherName);
+                }, 1000);
+            }
+        }
+
+        function stopLoading() {
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            btn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnSpinner.classList.add('hidden');
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }
+
+        function showSuccess(name) {
+            stopLoading();
+            document.getElementById('success-message').textContent = `Cảm ơn thầy/cô ${name} đã cập nhật lịch giảng dạy.`;
             document.getElementById('success-screen').classList.remove('hidden');
         }
 
