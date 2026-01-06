@@ -197,8 +197,8 @@
                         <!-- JS sẽ điền các ngày vào đây -->
                     </div>
                     <p class="error-msg text-xs text-amber-500 mt-1 italic hidden">* Vui lòng chọn ít nhất 1 ngày</p>
-                    <input type="hidden" name="selectedDays" value="" required> 
-                    <!-- Hidden input để validate form HTML5 -->
+                    <input type="hidden" name="selectedDays" value=""> 
+                    <!-- Hidden input để giữ giá trị, nhưng không dùng required của HTML5 nữa -->
                 </div>
             </div>
         </div>
@@ -309,33 +309,45 @@
             // Show/Hide error
             const errorMsg = card.querySelector('.error-msg');
             if (keys.length === 0) {
+                // Chỉ hiện lỗi khi người dùng bỏ chọn hết (để nhắc nhở)
+                // Việc chặn submit sẽ xử lý ở hàm handleSubmit
                 errorMsg.classList.remove('hidden');
-                hiddenInput.setCustomValidity("Vui lòng chọn ít nhất 1 ngày");
             } else {
                 errorMsg.classList.add('hidden');
-                hiddenInput.setCustomValidity("");
             }
         }
 
         function handleSubmit(e) {
             e.preventDefault();
             
-            // Validate custom: Check days selected
-            const hiddenInputs = document.querySelectorAll('input[name="selectedDays"]');
+            const scheduleCards = document.querySelectorAll('.schedule-card');
             let isValid = true;
-            hiddenInputs.forEach(input => {
-                if (!input.value) {
-                    input.setCustomValidity("Vui lòng chọn ít nhất 1 ngày");
-                    input.reportValidity();
+            let firstInvalidCard = null;
+
+            // Validate thủ công từng thẻ
+            scheduleCards.forEach(card => {
+                const hiddenInput = card.querySelector('input[name="selectedDays"]');
+                const errorMsg = card.querySelector('.error-msg');
+                
+                if (!hiddenInput.value) {
                     isValid = false;
+                    errorMsg.classList.remove('hidden'); // Hiện dòng chữ đỏ
+                    if (!firstInvalidCard) firstInvalidCard = card;
+                } else {
+                    errorMsg.classList.add('hidden');
                 }
             });
 
-            if (!isValid) return;
+            if (!isValid) {
+                // Cuộn tới thẻ lỗi đầu tiên
+                if (firstInvalidCard) {
+                    firstInvalidCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
 
             // Collect Data
             const teacherName = document.getElementById('teacherName').value;
-            const scheduleCards = document.querySelectorAll('.schedule-card');
             const schedules = [];
 
             scheduleCards.forEach((card, index) => {
