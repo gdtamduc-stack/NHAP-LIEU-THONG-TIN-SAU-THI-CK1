@@ -83,7 +83,7 @@
 
         // --- CẤU HÌNH KẾT NỐI GOOGLE SHEET ---
         // Đã cập nhật lại link gốc bạn cung cấp
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbJrkkTJYFs0rR8WlSJN2SmXyvS1-99f3ngJ4629sXbUJa1T83piqnSgUu2vDO6jN1/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLKA4IqEwCWmu2JI53ic6286wqzVjs7fqvkh9Yrt-N8NNhNyunamM2mau08DNUFRv5/exec";
 
         function App() {
             const [teacherInfo, setTeacherInfo] = useState({ name: '' });
@@ -92,17 +92,14 @@
             
             const locations = [
                 "Cơ Sở Biệt Thự",
-                "Cơ Sở Nguyễn Văn Siêu",
-                "Cơ Sở Miễn Phí",
-                "Cơ Sở Tân Đông Hiệp B",
-                "Cơ Sở Bình An",
-                "Cơ Sở Đông Hòa",
-                "Cơ Sở Võ Trường Toản",
+                "Cơ Sở Nguyễn Du",
+                "Cơ Sở Trần Quang Khải",
+                "Cơ Sở Thái Hòa",
                 "Cơ Sở Thủ Đức"
             ];
 
-            const grades = ["6", "7", "8", "9"];
-            const subjects = ["Toán", "Tiếng Anh", "KHTN", "Văn"];
+            const grades = ["10", "11", "12"];
+            const subjects = ["Toán", "Tiếng Anh", "Lý","Hóa", "Văn"];
 
             const daysOfWeek = [
                 { key: 'T2', label: 'T2' },
@@ -544,4 +541,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>
